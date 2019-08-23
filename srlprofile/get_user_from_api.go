@@ -1,4 +1,4 @@
-package srltitlecard
+package srlprofile
 
 import (
     "fmt"

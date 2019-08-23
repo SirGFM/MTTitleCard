@@ -2,7 +2,7 @@ package main
 
 import (
     "github.com/SirGFM/MTTitleCard/mtcareers"
-    "github.com/SirGFM/MTTitleCard/srltitlecard"
+    "github.com/SirGFM/MTTitleCard/srlprofile"
     "flag"
     "fmt"
 )
@@ -42,10 +42,10 @@ func testSrlTitleCard() {
     }
 
     if srlURL != "" {
-        u := srltitlecard.Get(srlURL);
+        u := srlprofile.Get(srlURL);
         fmt.Printf("%+v\n", u)
     } else if srlUser != "" {
-        u := srltitlecard.GetFromUsername(srlUser);
+        u := srlprofile.GetFromUsername(srlUser);
         fmt.Printf("%+v\n", u)
     }
 }
