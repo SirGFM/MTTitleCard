@@ -61,6 +61,7 @@ func GetFromApi(url string) User {
     var u User
 
     u.Name = api.Player.Name
+    u.Channel = api.Player.Channel
     u.FirstRace = time.Unix(int64(api.Stats.FirstRaceDate), 0).Format("Jan 2, 2006")
     u.NumRaces = api.Stats.TotalRaces
     dur := time.Duration(api.Stats.TotalTimePlayed)

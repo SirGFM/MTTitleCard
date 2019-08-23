@@ -30,6 +30,8 @@ type User struct {
     NumThird int `parent:"profile_races" id:"thirds" final:"true"`
     // Number of times that the user has gotten forfeited
     NumForfeit int `parent:"profile_races" id:"quits" final:"true"`
+    // User streaming channel
+    Channel string
 
     // Nodes used to more quickly retrieve an item
     nodes map[string]*html.Node
