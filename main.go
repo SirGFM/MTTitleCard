@@ -7,7 +7,7 @@ import (
     "fmt"
 )
 
-func main() {
+func testMtCareers() {
     arg := mtcareers.Arg {
         CredentialToken: "credentials.json",
         SpreadsheetId: "1LE6z_xRRxtIcCKYDzH9ag_1Iry6iHlqhpc09mqTZfiU",
@@ -26,9 +26,10 @@ func main() {
         panic(fmt.Sprintf("Failed to get user info: %+v", err))
     }
     fmt.Printf("%+v\n", usr)
+}
 
-    return
 
+func testSrlTitleCard() {
     var srlURL string
     var srlUser string
 
@@ -47,4 +48,9 @@ func main() {
         u := srltitlecard.GetFromUsername(srlUser);
         fmt.Printf("%+v\n", u)
     }
+}
+
+func main() {
+    //testMtCareers()
+    testSrlTitleCard()
 }
