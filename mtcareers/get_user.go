@@ -20,10 +20,12 @@ const userFirstCol = "A"
 const userLastCol = "H"
 const userFirstRow = 2
 
+const joinedMtIdx = 0
 const nameIdx = 1
 const torneyCountIdx = 2
 const winIdx = 3
 const loseIdx = 4
+const draftIdx = 7
 
 const standingSheet = "MT Career Standings"
 const standingsFirstCol = "A"
@@ -37,10 +39,12 @@ var _idxToPlace []int = []int{0, 0}
 
 type User struct {
     Username string
+    FirstMT string
     TourneyCount int
     WinCount int
     LoseCount int
     HighestPosition int
+    DraftPoints float32
 }
 
 func (s *Sheet) GetTourneyInfo() error {
@@ -83,6 +87,13 @@ func rowToUser(row []interface{}) (u User, err error) {
     if err != nil {
         return
     }
+    u.FirstMT, err = cellToStr(row[joinedMtIdx])
+    if err != nil {
+        return
+    }
+    if u.FirstMT[0] == '.' {
+        u.FirstMT = u.FirstMT[1:]
+    }
     u.TourneyCount, err = cellToInt(row[torneyCountIdx])
     if err != nil {
         return
@@ -92,6 +103,10 @@ func rowToUser(row []interface{}) (u User, err error) {
         return
     }
     u.LoseCount, err = cellToInt(row[loseIdx])
+    if err != nil {
+        return
+    }
+    u.DraftPoints, err = cellToFloat(row[draftIdx])
     return
 }
 

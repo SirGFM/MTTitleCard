@@ -88,7 +88,7 @@ func saveToken(path string, token *oauth2.Token) {
 func cellToInt(cell interface{}) (int, error) {
     switch c := cell.(type) {
     case string:
-        val, err := strconv.ParseInt(c, 10, 64)
+        val, err := strconv.ParseInt(c, 10, 32)
         return int(val), err
     case int:
         return c, nil
@@ -98,6 +98,24 @@ func cellToInt(cell interface{}) (int, error) {
     case float64:
         val := int(c)
         return int(val), nil
+    case bool:
+        return 0, nil
+    }
+    /* TODO Error */
+    return -1, nil
+}
+
+func cellToFloat(cell interface{}) (float32, error) {
+    switch c := cell.(type) {
+    case string:
+        val, err := strconv.ParseFloat(c, 32)
+        return float32(val), err
+    case int:
+        return float32(c), nil
+    case float32:
+        return c, nil
+    case float64:
+        return float32(c), nil
     case bool:
         return 0, nil
     }
