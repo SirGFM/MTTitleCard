@@ -68,7 +68,7 @@ func GenerateData(srlUsername, username string) error {
         MtCount: mtUser.TourneyCount,
         Wins: mtUser.WinCount,
         Losses: mtUser.LoseCount,
-        WinRate: int(rate),
+        WinRate: int(rate * 100),
         DraftPoints: int(mtUser.DraftPoints),
         HighestPlacement: pos,
     }
