@@ -2,6 +2,7 @@ package page
 
 import (
     "fmt"
+    "github.com/pkg/errors"
     "github.com/SirGFM/MTTitleCard/mtcareers"
     "github.com/SirGFM/MTTitleCard/srlprofile"
 )
@@ -27,27 +28,26 @@ var arg mtcareers.Arg = mtcareers.Arg {
 
 func GenerateData(srlUsername, username string) error {
     if _, ok := _cache[username]; ok {
+        // User already parsed and cached
         return nil
     }
 
     srlUser, err := srlprofile.GetFromUsername(srlUsername)
     if err != nil {
-        return err
+        return errors.Wrap(err, "Failed to get SRL Profile to generate user data")
     }
 
     sh, err := mtcareers.GetSheet(&arg)
     if err != nil {
-        return err
+        return errors.Wrap(err, "Failed to retrieve MT Career spreadsheet to generate user data")
     }
     err = sh.GetTourneyInfo()
     if err != nil {
-        //panic(fmt.Sprintf("Failed to get tourney info: %+v", err))
-        return err
+        return errors.Wrap(err, "Failed to get tourney info to generate user data")
     }
     mtUser, err := sh.GetUserInfo(username)
     if err != nil {
-        //panic(fmt.Sprintf("Failed to user info: %+v", err))
-        return err
+        return errors.Wrap(err, "Failed to get MT Career user info to generate user data")
     }
 
     var pos string

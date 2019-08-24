@@ -14,26 +14,65 @@ type pageServer struct {
 }
 var srv pageServer
 
-func (p *pageServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-    username := req.URL.Path
-    if username[0] == '/' {
-        username = username[1:]
-    }
-    if username == "style.css" {
-        w.Header().Set("Content-Type", "text/css")
-        w.WriteHeader(http.StatusOK)
-        io.WriteString(w, style)
-    } else if len(username) > 0 {
-        err := GenerateData(username, username)
-        if err == nil {
-            w.Header().Set("Content-Type", "text/html")
-            w.WriteHeader(http.StatusOK)
-            p.userPage.Execute(w, _cache[username])
-        } else {
-            w.WriteHeader(http.StatusNotFound)
-        }
+type request struct {
+    p *pageServer
+    w http.ResponseWriter
+    req *http.Request
+    path string
+}
+
+func (r *request) getCss() {
+    r.w.Header().Set("Content-Type", "text/css")
+    r.w.WriteHeader(http.StatusOK)
+    io.WriteString(r.w, style)
+}
+
+func (r *request) getUserData(username string) {
+    err := GenerateData(username, username)
+    if err == nil {
+        r.w.Header().Set("Content-Type", "text/html")
+        r.w.WriteHeader(http.StatusOK)
+        r.p.userPage.Execute(r.w, _cache[username])
     } else {
-        w.WriteHeader(http.StatusNotFound)
+        serr := fmt.Sprintf("%+v", err)
+        http.Error(r.w, serr, http.StatusNotFound)
+        fmt.Println(serr)
+    }
+}
+
+func (r *request) get() {
+    switch r.path {
+    case "style.css":
+        r.getCss()
+    case "",
+        "index",
+        "index.html":
+
+        http.Error(r.w, "Index still not implemented...", http.StatusNotFound)
+    default:
+        r.getUserData(r.path)
+    }
+}
+
+func (p *pageServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+    var r request = request {
+        p: p,
+        w: w,
+        req: req,
+        path: req.URL.Path,
+    }
+
+    if r.path[0] == '/' {
+        r.path = r.path[1:]
+    }
+
+    switch (req.Method) {
+    case "GET":
+        r.get()
+    case "POST":
+        fallthrough
+    default:
+        w.WriteHeader(http.StatusMethodNotAllowed)
     }
 }
 
