@@ -48,8 +48,8 @@ func testSrlTitleCard() {
         u := srlprofile.Get(srlURL);
         fmt.Printf("%+v\n", u)
     } else if srlUser != "" {
-        u := srlprofile.GetFromUsername(srlUser);
-        fmt.Printf("%+v\n", u)
+        u, err := srlprofile.GetFromUsername(srlUser);
+        fmt.Printf("%+v\nerr: %+v\n", u, err)
     }
 }
 

@@ -2,11 +2,13 @@ package srlprofile
 
 import (
     "fmt"
+    "github.com/pkg/errors"
     "encoding/json"
     "net/http"
     "time"
 )
 
+// Mapping for the 'stats' field in SRL's API
 type SrlStats struct {
     Rank int
     TotalRaces int
@@ -21,6 +23,7 @@ type SrlStats struct {
     TotalDisqualifications int
 }
 
+// Mapping for the 'player' field in SRL's API
 type SrlPlayer struct {
     Id int
     Name string
@@ -31,22 +34,26 @@ type SrlPlayer struct {
     Country string
 }
 
+// Mapping for the 'game' field in SRL's API
 type SrlGame struct {
      Name string
      Abbrev string
 }
 
+// Object retrieved when doing a get for 'stat' in SRL's API
 type SrlApiProfile struct {
     Stats SrlStats
     Player SrlPlayer
     Game SrlGame
 }
 
-func GetFromApi(url string) User {
+// GetFromApi retrieves and parses the user info retrieved from url, which must be a:
+//   http://api.speedrunslive.com/stat?player=<username>
+func GetFromApi(url string) (User, error) {
     // Download the user data
     resp, err := http.Get(url)
     if err != nil {
-        panic(fmt.Sprintf("Failed to get user from API: %+v", err))
+        return User{}, errors.Wrap(err, "Failed to get user from API")
     }
     defer resp.Body.Close()
 
@@ -55,7 +62,7 @@ func GetFromApi(url string) User {
     var api SrlApiProfile
     err = dec.Decode(&api)
     if err != nil {
-        panic(fmt.Sprintf("Failed to decode the JSON: %+v", err))
+        return User{}, errors.Wrap(err, "Failed to decode the JSON")
     }
 
     var u User
@@ -72,10 +79,11 @@ func GetFromApi(url string) User {
     u.NumThird = api.Stats.TotalThirdPlace
     u.NumForfeit = api.Stats.TotalQuits
 
-    return u
+    return u, nil
 }
 
-func GetFromUsername(username string) User {
+// GetFromUsername retrieves a user from SRL's API.
+func GetFromUsername(username string) (User, error) {
     url := fmt.Sprintf("http://api.speedrunslive.com/stat?player=%s", username)
     return GetFromApi(url)
 }

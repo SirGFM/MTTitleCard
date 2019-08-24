@@ -37,6 +37,7 @@ type User struct {
     nodes map[string]*html.Node
 }
 
+// Get SRL profile page and parse it. THIS FUNCTION WORKS ONLY ON STATIC PAGES!
 func Get(url string) User {
     // Download the user data
     resp, err := http.Get(url)

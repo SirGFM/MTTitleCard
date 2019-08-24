@@ -30,7 +30,10 @@ func GenerateData(srlUsername, username string) error {
         return nil
     }
 
-    srlUser := srlprofile.GetFromUsername(srlUsername)
+    srlUser, err := srlprofile.GetFromUsername(srlUsername)
+    if err != nil {
+        return err
+    }
 
     sh, err := mtcareers.GetSheet(&arg)
     if err != nil {
