@@ -19,9 +19,15 @@ body {
 .user {
     margin: 1.5em;
 }
+.avatar {
+    width: 100px;
+    float: left;
+}
 .username {
     font-size: xx-large;
-    display: block;
+    vertical-align: middle;
+    line-height: 100px;
+    margin-left: 0.5em;
 }
 .stats {
     margin: 1.5em;
@@ -47,7 +53,11 @@ const pageTemplate = `
             twitch.tv/{{.Channel}}
         </label>
         <div class="user" id="user">
-            <!-- Avatar -->
+            {{if eq .Avatar "" }}
+                <!-- Didn't get avatar... -->
+            {{else}}
+                <img class="avatar" src="{{.Avatar}}" alt="{{.Username}}'s avatar">
+            {{end}}
             <label class="username" id="username">
                 {{.Username}}
             </label>

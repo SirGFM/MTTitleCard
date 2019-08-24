@@ -10,6 +10,7 @@ import (
 type Data struct {
     Channel string
     Username string
+    Avatar string
     Joined string
     MtCount int
     Wins int
@@ -67,6 +68,7 @@ func GenerateData(srlUsername, username string) error {
     var d Data = Data {
         Channel: srlUser.Channel,
         Username: mtUser.Username,
+        Avatar: srlUser.SrlAvatar,
         Joined: mtUser.FirstMT,
         MtCount: mtUser.TourneyCount,
         Wins: mtUser.WinCount,

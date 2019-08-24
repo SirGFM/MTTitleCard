@@ -1,9 +1,10 @@
 package srlprofile
 
 import (
+    "encoding/json"
     "fmt"
     "github.com/pkg/errors"
-    "encoding/json"
+    "io"
     "net/http"
     "time"
 )
@@ -47,6 +48,48 @@ type SrlApiProfile struct {
     Game SrlGame
 }
 
+// XXX: This was retrieved from SRL's profile page... sowwy D:
+var client_id string
+
+func getUserAvatar(channel string) (string, error) {
+    url := fmt.Sprintf("https://api.twitch.tv/kraken/channels/%s?client_id=%s",
+            channel, client_id)
+    resp, err := http.Get(url)
+    if err != nil {
+        return "", errors.Wrap(err, "Failed to get twitch info")
+    }
+    defer resp.Body.Close()
+
+    dec := json.NewDecoder(resp.Body)
+    getNext := false
+    for {
+        t, err := dec.Token()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+            return "", errors.Wrap(err, "Failed to parse twitch info")
+        }
+        switch val := t.(type) {
+        case string:
+            if getNext {
+                return val, nil
+            }
+            getNext = (val == "logo")
+        default:
+            continue
+        /* Other valid cases are the following, but we don't really care abou those...
+        case json.Delim:
+        case bool:
+        case float64:
+        case json.Number:
+        case nil:
+        */
+        }
+    }
+
+    return "", errors.New("Failed to get avatar from twitch info")
+}
+
 // GetFromApi retrieves and parses the user info retrieved from url, which must be a:
 //   http://api.speedrunslive.com/stat?player=<username>
 func GetFromApi(url string) (User, error) {
@@ -79,6 +122,11 @@ func GetFromApi(url string) (User, error) {
     u.NumThird = api.Stats.TotalThirdPlace
     u.NumForfeit = api.Stats.TotalQuits
 
+    u.SrlAvatar, err = getUserAvatar(api.Player.Channel)
+    if err != nil {
+        // XXX: Failing to get the avatar isn't (imo) a critical error...
+        fmt.Printf("Failed to get the player's avatar:\n\n%+v\n", err)
+    }
     return u, nil
 }
 

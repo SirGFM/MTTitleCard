@@ -12,7 +12,7 @@ import (
 type User struct {
     // The username
     Name string `parent:"profile_name" id:"profile_playername" final:"true"`
-    // TODO: Link to the avatar as shown in SRL's page
+    // URL to the user's twitch avatar
     SrlAvatar string `parent:"profile_name" id:"avatarHolder"`
     // Date of the first race ever
     FirstRace string `parent:"profile_races" id:"date" final:"true"`
