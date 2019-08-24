@@ -1,9 +1,9 @@
 package mtcareers
 
 import (
+    goErrors "errors"
     "fmt"
     "github.com/pkg/errors"
-    "log"
     "strconv"
 )
 
@@ -37,6 +37,8 @@ var _standingsCache [][]interface{} = nil
 // Initialize the places skipping the name and MT count columns
 var _idxToPlace []int = []int{0, 0}
 
+var errNoPlacing error = goErrors.New("User haven't played in any tournament yet")
+
 type User struct {
     Username string
     FirstMT string
@@ -49,6 +51,7 @@ type User struct {
 
 func (s *Sheet) GetTourneyInfo() error {
     if s.TotalEntrants != 0 && s.LatestEntrants != 0 {
+        // Info already cached, no need to do anything
         return nil
     }
 
@@ -60,22 +63,20 @@ func (s *Sheet) GetTourneyInfo() error {
         totalsRow+1)
     resp, err := s.srv.Spreadsheets.Values.Get(s.id, _range).Do()
     if err != nil {
-        log.Fatalf("Unable to retrieve data from sheet: %v", err)
-        return err
+        return errors.Wrap(err, "Failed to get the number of entrants: Unable to retrieve data from sheet")
     }
 
     if len(resp.Values) == 0 {
-        fmt.Println("No data found.")
-        // TODO return err
+        return errors.New("Failed to get the number of entrants: No data found")
     } else {
         row := resp.Values[0]
         s.TotalEntrants, err = cellToInt(row[0])
         if err != nil {
-            return err
+            return errors.Wrap(err, "Failed to parse TotalEntrants from sheet")
         }
         s.LatestEntrants, err = cellToInt(row[len(row)-1])
         if err != nil {
-            return err
+            return errors.Wrap(err, "Failed to parse LatestEntrants from sheet")
         }
     }
 
@@ -85,10 +86,12 @@ func (s *Sheet) GetTourneyInfo() error {
 func rowToUser(row []interface{}) (u User, err error) {
     u.Username, err = cellToStr(row[nameIdx])
     if err != nil {
+        err = errors.Wrap(err, "Failed to parse Username from sheet")
         return
     }
     u.FirstMT, err = cellToStr(row[joinedMtIdx])
     if err != nil {
+        err = errors.Wrap(err, "Failed to parse FirstMT from sheet")
         return
     }
     if u.FirstMT[0] == '.' {
@@ -96,20 +99,26 @@ func rowToUser(row []interface{}) (u User, err error) {
     }
     u.TourneyCount, err = cellToInt(row[torneyCountIdx])
     if err != nil {
+        err = errors.Wrap(err, "Failed to parse TourneyCount from sheet")
         return
     }
     u.WinCount, err = cellToInt(row[winIdx])
     if err != nil {
+        err = errors.Wrap(err, "Failed to parse WinCount from sheet")
         return
     }
     u.LoseCount, err = cellToInt(row[loseIdx])
     if err != nil {
+        err = errors.Wrap(err, "Failed to parse LoseCount from sheet")
         return
     }
     u.DraftPoints, err = cellToFloat(row[draftIdx])
+    // XXX: if err == nil, errors.Wrap returns nil as well!
+    err = errors.Wrap(err, "Failed to parse DraftPoints from sheet")
     return
 }
 
+// min return the smallest of two values
 func min(a,b int) int {
     if a < b {
         return a
@@ -117,21 +126,31 @@ func min(a,b int) int {
     return b
 }
 
-func (u *User) setHighestPosition(row []interface{}) {
-    u.HighestPosition = 999
+// setHighestPosition from a player's row in the spreadsheet
+func (u *User) setHighestPosition(row []interface{}) (err error) {
+    u.HighestPosition = 9999
+    found := false
 
     for i, v := range row {
         if i < 2 || i >= len(_idxToPlace) {
             continue
         }
-        cell, err := cellToInt(v)
-        if err == nil && cell > 0 {
+        cell, gerr := cellToInt(v)
+        if gerr != nil {
+            return errors.Wrap(gerr, "Failed to parse user's highest position")
+        } else if cell > 0 {
             u.HighestPosition = min(u.HighestPosition, _idxToPlace[i])
+            found = true
         }
     }
+
+    if !found {
+        err = errors.Wrap(errNoPlacing, "")
+    }
+    return
 }
 
-func (s *Sheet) GetUserInfo(username string) (User, error) {
+func (s *Sheet) GetUserInfo(username string) (u User, err error) {
     if _tourneyCache == nil {
         _range := fmt.Sprintf(baseRange,
             userInfoSheet,
@@ -139,10 +158,10 @@ func (s *Sheet) GetUserInfo(username string) (User, error) {
             userFirstRow,
             userLastCol,
             s.TotalEntrants)
-        resp, err := s.srv.Spreadsheets.Values.Get(s.id, _range).Do()
-        if err != nil {
-            log.Fatalf("Unable to retrieve data from sheet: %v", err)
-            return User{}, err
+        resp, gerr := s.srv.Spreadsheets.Values.Get(s.id, _range).Do()
+        if gerr != nil {
+            err = errors.Wrap(gerr, "Unable to retrieve tourney data from sheet")
+            return
         }
 
         _tourneyCache = resp.Values
@@ -154,29 +173,30 @@ func (s *Sheet) GetUserInfo(username string) (User, error) {
             standingsFirstRow,
             standingsLastCol,
             s.TotalEntrants)
-        resp, err := s.srv.Spreadsheets.Values.Get(s.id, _range).Do()
-        if err != nil {
-            log.Fatalf("Unable to retrieve data from sheet: %v", err)
-            return User{}, err
+        resp, gerr := s.srv.Spreadsheets.Values.Get(s.id, _range).Do()
+        if gerr != nil {
+            err = errors.Wrap(gerr, "Unable to retrieve standings from sheet")
+            return
         }
 
         _standingsCache = resp.Values
-        for _, row := range _standingsCache[0] {
+        for i, row := range _standingsCache[0] {
             st, ok := row.(string)
-            if !ok || len(st) < 2 {
+            if !ok || len(st) < 2 || i < 2 {
                 continue
             }
-            val, err := strconv.ParseInt(st[:len(st)-2], 10, 64)
-            if err != nil {
+            val, gerr := strconv.ParseInt(st[:len(st)-2], 10, 64)
+            if gerr != nil {
+                err = errors.Wrap(gerr, "Unable to map standing index in sheet to tournament placement")
+                return
+            } else if val == 0 {
                 continue
             }
             _idxToPlace = append(_idxToPlace, int(val))
         }
     }
 
-    var u User
-
-    err := errors.New("User not found")
+    err = errors.New(fmt.Sprintf("User not found: '%s'", username))
     for _, row := range _tourneyCache {
         if row[1] == username {
             u, err = rowToUser(row)
@@ -186,11 +206,14 @@ func (s *Sheet) GetUserInfo(username string) (User, error) {
     if err == nil {
         for _, row := range _standingsCache {
             if row[0] == username {
-                u.setHighestPosition(row)
+                err = u.setHighestPosition(row)
+                if errors.Cause(err) == errNoPlacing {
+                    err = nil
+                }
                 break
             }
         }
     }
 
-    return u, err
+    return
 }
