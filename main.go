@@ -3,8 +3,11 @@ package main
 import (
     "github.com/SirGFM/MTTitleCard/mtcareers"
     "github.com/SirGFM/MTTitleCard/srlprofile"
+    "github.com/SirGFM/MTTitleCard/page"
     "flag"
     "fmt"
+    "os"
+    "os/signal"
 )
 
 func testMtCareers() {
@@ -50,7 +53,26 @@ func testSrlTitleCard() {
     }
 }
 
+func testPage() {
+    err := page.StarServer(8080)
+    if err != nil {
+        panic(fmt.Sprintf("Failed to start server: %+v", err))
+    }
+
+    signalTrap := make(chan os.Signal, 1)
+    wait := make(chan struct{}, 1)
+    go func (c chan os.Signal) {
+        _ = <-c
+        page.StopServer()
+        wait <- struct{}{}
+    } (signalTrap)
+    signal.Notify(signalTrap, os.Interrupt)
+
+    <-wait
+}
+
 func main() {
     //testMtCareers()
-    testSrlTitleCard()
+    //testSrlTitleCard()
+    testPage()
 }
