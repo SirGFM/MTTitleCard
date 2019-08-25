@@ -15,16 +15,22 @@ import (
 )
 
 type Sheet struct {
+    // Object used to access the spreadsheet
     srv *sheets.Service
+    // ID of the spreadsheet being accessed
     id string
+    // Number of entrants through every tournament
     TotalEntrants int
+    // Number of entrants on the latest tournament
     LatestEntrants int
 }
 
 type Arg struct {
+    // Path to the API token file, if not the default path
     ApiToken string
     // Path to JSON downloaded after enabling the API
     CredentialToken string
+    // ID of the spreadsheet being accessed
     SpreadsheetId string
 }
 

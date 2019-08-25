@@ -7,6 +7,8 @@ import (
     "github.com/SirGFM/MTTitleCard/srlprofile"
 )
 
+// Data maps every API-retrieved user information into an structure understood
+// by the template page
 type Data struct {
     Channel string
     Username string
@@ -20,6 +22,7 @@ type Data struct {
     HighestPlacement string
 }
 
+// _cache of already downloaded and parsed users
 var _cache map[string]Data = map[string]Data{}
 
 var arg mtcareers.Arg = mtcareers.Arg {
@@ -27,6 +30,8 @@ var arg mtcareers.Arg = mtcareers.Arg {
     SpreadsheetId: "1LE6z_xRRxtIcCKYDzH9ag_1Iry6iHlqhpc09mqTZfiU",
 }
 
+// GenerateData downloads, parses and caches data for a given username.
+// srlUsername and username should be the same.
 func GenerateData(srlUsername, username string) error {
     if _, ok := _cache[username]; ok {
         // User already parsed and cached

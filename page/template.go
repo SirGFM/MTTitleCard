@@ -1,5 +1,6 @@
 package page
 
+// Base CSS style for the template page
 const style = `
 body {
     background: #202225;
@@ -40,6 +41,7 @@ body {
 }
 `
 
+// pageTemplate used to display a user's downloaded info
 const pageTemplate = `
 <!DOCTYPE html>
 <html lang="en">

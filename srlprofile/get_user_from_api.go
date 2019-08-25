@@ -51,6 +51,7 @@ type SrlApiProfile struct {
 // XXX: This was retrieved from SRL's profile page... sowwy D:
 var client_id string
 
+// getUserAvatar URL from Twitch's API
 func getUserAvatar(channel string) (string, error) {
     url := fmt.Sprintf("https://api.twitch.tv/kraken/channels/%s?client_id=%s",
             channel, client_id)
@@ -60,6 +61,7 @@ func getUserAvatar(channel string) (string, error) {
     }
     defer resp.Body.Close()
 
+    // Manually decode the JSON, looking only for the desired tokens
     dec := json.NewDecoder(resp.Body)
     getNext := false
     for {

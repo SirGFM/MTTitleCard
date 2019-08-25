@@ -8,26 +8,38 @@ import (
     "net/http"
 )
 
+// pageServer wraps the request handler, and everything used by it
 type pageServer struct {
+    // userPage is a template used to fill a user's info
     userPage *template.Template
     // httpServer handling requests from the client
     httpServer *http.Server
 }
+// srv is the currently executing server, mainly used to top the server
 var srv pageServer
 
+// request wraps parameters common to handlers to simplify calling sub-functions
 type request struct {
+    // p is the running server (should be the same as srv)
     p *pageServer
+    // w is this request's response writer
     w http.ResponseWriter
+    // req is the actual received request
     req *http.Request
+    // path is the received URL (e.g., "index", "favicon.ico
     path string
 }
 
+// getCss retrieve the CSS used by the server
 func (r *request) getCss() {
     r.w.Header().Set("Content-Type", "text/css")
     r.w.WriteHeader(http.StatusOK)
     io.WriteString(r.w, style)
 }
 
+// getUserData parse username info, fit it into the template and return the
+// resulting page. In case of error, the stack trace is returned back to the
+// client
 func (r *request) getUserData(username string) {
     err := GenerateData(username, username)
     if err == nil {
@@ -41,6 +53,7 @@ func (r *request) getUserData(username string) {
     }
 }
 
+// get handles GET requests
 func (r *request) get() {
     switch r.path {
     case "style.css":
@@ -55,6 +68,7 @@ func (r *request) get() {
     }
 }
 
+// ServeHTTP is called by Go's http package whenever a new HTTP request arrives
 func (p *pageServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     var r request = request {
         p: p,

@@ -7,19 +7,27 @@ import (
     "strconv"
 )
 
+// baseRange formats the lookup string for retrieving a range from a
+// spreadsheet. For example, to retrieve the columns "A" to "D" and rows "5" to
+// "20" from a spreadsheet "TEST", one would request the following range:
+//     "TEST!A5:D20"
+// This can be more easily (or in a more organized fashion) by doing:
+//     fmt.Sprintf(baseRange, "TEST", "A", 5, "D", 20)
 const baseRange = "%s!%s%d:%s%d"
 
-// TODO retrieve exact row with stats
+// Spreadsheet info used to extract the number of entrants
 const torneyInfoSheet = "STATS"
 const tourneyTotalCol = "C"
 const currentTotalCol = "F"
 const totalsRow = 16
 
+// Spreadsheet info used to extract the tournament entrants
 const userInfoSheet = "MT Career"
 const userFirstCol = "A"
 const userLastCol = "H"
 const userFirstRow = 2
 
+// Index of user-related info within the spreadsheet
 const joinedMtIdx = 0
 const nameIdx = 1
 const torneyCountIdx = 2
@@ -27,28 +35,46 @@ const winIdx = 3
 const loseIdx = 4
 const draftIdx = 7
 
+// Spreadsheet info used to extract the entrants standings
 const standingSheet = "MT Career Standings"
 const standingsFirstCol = "A"
 const standingsLastCol = "S"
 const standingsFirstRow = 1
 
+// _tourneyCache stores the downloaded tournament info spreadsheet
 var _tourneyCache [][]interface{} = nil
+// _standingsCache stores the downloaded standings spreadsheet
 var _standingsCache [][]interface{} = nil
-// Initialize the places skipping the name and MT count columns
+
+// _idxToPlace converts an index in the standings row into a tournament
+// placement. The first two values are initialized to zero to skip the name and
+// MT count columns.
 var _idxToPlace []int = []int{0, 0}
 
+// errNoPlacing indicates that the user still doesn't have a best placement, as
+// this is most likely their first MT
 var errNoPlacing error = goErrors.New("User haven't played in any tournament yet")
 
+// User stores every info retrieved from the spreadsheet
 type User struct {
+    // The username (the same for SRL and MT Tournament)
     Username string
+    // Initials of the first MT that user joined
     FirstMT string
+    // Number of MTs that the user has joined
     TourneyCount int
+    // How many victories the user has obtained through all their tournaments
     WinCount int
+    // How many losses the user has obtained through all their tournaments
     LoseCount int
+    // Highest position achieved by the user in a MT
     HighestPosition int
+    // How many draft points the user is worth (?)
     DraftPoints float32
 }
 
+// GetTourneyInfo retrieve the total number of entrants and the number of
+// entrants in the latest tournament.
 func (s *Sheet) GetTourneyInfo() error {
     if s.TotalEntrants != 0 && s.LatestEntrants != 0 {
         // Info already cached, no need to do anything
@@ -83,6 +109,7 @@ func (s *Sheet) GetTourneyInfo() error {
     return nil
 }
 
+// rowToUser convert a row, retrieved from the spreadsheet, into a User
 func rowToUser(row []interface{}) (u User, err error) {
     u.Username, err = cellToStr(row[nameIdx])
     if err != nil {
@@ -150,7 +177,10 @@ func (u *User) setHighestPosition(row []interface{}) (err error) {
     return
 }
 
+// GetUserInfo from the MT Career spreadsheet
 func (s *Sheet) GetUserInfo(username string) (u User, err error) {
+    // Download and cache the participants info and standings through every
+    // tournament
     if _tourneyCache == nil {
         _range := fmt.Sprintf(baseRange,
             userInfoSheet,
@@ -179,12 +209,14 @@ func (s *Sheet) GetUserInfo(username string) (u User, err error) {
             return
         }
 
+        // Convert an index in the standings cache to a tournament placement
         _standingsCache = resp.Values
         for i, row := range _standingsCache[0] {
             st, ok := row.(string)
             if !ok || len(st) < 2 || i < 2 {
                 continue
             }
+            // Remove the position suffix (e.g., 1st, 2nd etc)
             val, gerr := strconv.ParseInt(st[:len(st)-2], 10, 64)
             if gerr != nil {
                 err = errors.Wrap(gerr, "Unable to map standing index in sheet to tournament placement")
@@ -196,6 +228,7 @@ func (s *Sheet) GetUserInfo(username string) (u User, err error) {
         }
     }
 
+    // Retrieve the user info from the previously downloaded data
     err = errors.New(fmt.Sprintf("User not found: '%s'", username))
     for _, row := range _tourneyCache {
         if row[1] == username {
