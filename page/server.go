@@ -2,6 +2,7 @@ package page
 
 import (
     "fmt"
+    "github.com/pkg/errors"
     "io"
     "html/template"
     "net/http"
@@ -9,8 +10,8 @@ import (
 
 type pageServer struct {
     userPage *template.Template
-    body *template.Template
-    httpServer http.Server
+    // httpServer handling requests from the client
+    httpServer *http.Server
 }
 var srv pageServer
 
@@ -80,7 +81,11 @@ func (p *pageServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func StartServer(port int) error {
     var err error
 
-    srv.httpServer = http.Server {
+    if srv.httpServer != nil {
+        return errors.New("Server is already running!")
+    }
+
+    srv.httpServer = &http.Server {
         Addr: fmt.Sprintf(":%d", port),
         Handler: &srv,
     }
@@ -99,6 +104,10 @@ func StartServer(port int) error {
     return nil
 }
 
+// StopServer stops the currently executing server
 func StopServer() {
-    srv.httpServer.Close()
+    if srv.httpServer != nil {
+        srv.httpServer.Close()
+        srv.httpServer = nil
+    }
 }
