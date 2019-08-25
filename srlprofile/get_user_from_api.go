@@ -1,10 +1,12 @@
 package srlprofile
 
 import (
+    "bytes"
     "encoding/json"
     "fmt"
     "github.com/pkg/errors"
     "io"
+    "io/ioutil"
     "net/http"
     "time"
 )
@@ -92,25 +94,15 @@ func getUserAvatar(channel string) (string, error) {
     return "", errors.New("Failed to get avatar from twitch info")
 }
 
-// GetFromApi retrieves and parses the user info retrieved from url, which must be a:
-//   http://api.speedrunslive.com/stat?player=<username>
-func GetFromApi(url string) (User, error) {
-    // Download the user data
-    resp, err := http.Get(url)
-    if err != nil {
-        return User{}, errors.Wrap(err, "Failed to get user from API")
-    }
-    defer resp.Body.Close()
-
-    dec := json.NewDecoder(resp.Body)
-
+// decodeUser uses json's builtin Decode() to parse the retrieve JSON. It
+// breaks for new users, since some fields come as empty.
+func decodeUser(dec *json.Decoder) (u User, err error) {
     var api SrlApiProfile
     err = dec.Decode(&api)
     if err != nil {
-        return User{}, errors.Wrap(err, "Failed to decode the JSON")
+        err = errors.Wrap(err, "Failed to decode the JSON")
+        return
     }
-
-    var u User
 
     u.Name = api.Player.Name
     u.Channel = api.Player.Channel
@@ -128,8 +120,76 @@ func GetFromApi(url string) (User, error) {
     if err != nil {
         // XXX: Failing to get the avatar isn't (imo) a critical error...
         fmt.Printf("Failed to get the player's avatar:\n\n%+v\n", err)
+        err = nil
     }
-    return u, nil
+    return
+}
+
+// GetFromApi retrieves and parses the user info retrieved from url, which must be a:
+//   http://api.speedrunslive.com/stat?player=<username>
+func GetFromApi(url string) (User, error) {
+    // Download the user data
+    resp, err := http.Get(url)
+    if err != nil {
+        return User{}, errors.Wrap(err, "Failed to get user from API")
+    }
+    defer resp.Body.Close()
+
+    buf, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        return User{}, errors.Wrap(err, "Failed to read response from the API")
+    }
+    reader := bytes.NewReader(buf)
+
+    // Try to decode with Go's builtin decoder
+    dec := json.NewDecoder(reader)
+    if u, err := decodeUser(dec); err == nil {
+        return u, err
+    }
+
+    // If that fails (mostly for new players) fix the JSON manually and try again
+    reader.Seek(0, io.SeekStart)
+    var newBuf bytes.Buffer
+    var fix []byte = []byte("0")
+    var char [1]byte
+    var needsFixing int
+    slice := char[:]
+    for {
+        n, err := reader.Read(slice)
+        if err == io.EOF {
+            break
+        } else if err != nil {
+            return User{}, errors.Wrap(err, "Failed to manually read user JSON")
+        } else if n != 1 {
+            return User{}, errors.New("Failed to manually read user JSON: couldn't read byte")
+        }
+
+        switch slice[0] {
+        case '"':
+            needsFixing = 1
+        case ':':
+            if needsFixing == 1 {
+                needsFixing = 2
+            }
+        case ',':
+            if needsFixing == 2 {
+                needsFixing = 3
+            }
+        case ' ':
+            /* Do nothing */
+        default:
+            needsFixing = 0
+        }
+
+        if needsFixing == 3 {
+            newBuf.Write(fix)
+        }
+        newBuf.Write(slice)
+    }
+
+    reader = bytes.NewReader(newBuf.Bytes())
+    dec = json.NewDecoder(reader)
+    return decodeUser(dec)
 }
 
 // GetFromUsername retrieves a user from SRL's API.
