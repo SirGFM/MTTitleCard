@@ -5,6 +5,7 @@ import (
     "github.com/pkg/errors"
     "github.com/SirGFM/MTTitleCard/mtcareers"
     "github.com/SirGFM/MTTitleCard/srlprofile"
+    "strconv"
 )
 
 // Data maps every API-retrieved user information into an structure understood
@@ -17,7 +18,7 @@ type Data struct {
     MtCount int
     Wins int
     Losses int
-    WinRate int
+    WinRate string
     DraftPoints int
     HighestPlacement string
 }
@@ -68,8 +69,15 @@ func GenerateData(srlUsername, username string) error {
         pos = fmt.Sprintf("%dth", p)
     }
 
-    rate := float32(mtUser.WinCount)
-    rate /= float32(mtUser.WinCount + mtUser.LoseCount)
+    var rateStr string
+    if mtUser.WinCount + mtUser.LoseCount != 0 {
+        rate := float32(mtUser.WinCount)
+        rate /= float32(mtUser.WinCount + mtUser.LoseCount)
+        rate *= 100
+        rateStr = strconv.Itoa(int(rate))
+    } else {
+        rateStr = "N/A"
+    }
     var d Data = Data {
         Channel: srlUser.Channel,
         Username: mtUser.Username,
@@ -78,7 +86,7 @@ func GenerateData(srlUsername, username string) error {
         MtCount: mtUser.TourneyCount,
         Wins: mtUser.WinCount,
         Losses: mtUser.LoseCount,
-        WinRate: int(rate * 100),
+        WinRate: rateStr,
         DraftPoints: int(mtUser.DraftPoints),
         HighestPlacement: pos,
     }

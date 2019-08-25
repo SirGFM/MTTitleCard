@@ -91,7 +91,11 @@ const pageTemplate = `
             </tr>
             <tr>
                 <td class="stats_label" id="stats_label">Highest Placement</td>
-                <td class="stats_field" id="stats_field">{{.HighestPlacement}}</td>
+                {{if eq .HighestPlacement "9999th" }}
+                    <td class="stats_field" id="stats_field">N/A</td>
+                {{else}}
+                    <td class="stats_field" id="stats_field">{{.HighestPlacement}}</td>
+                {{end}}
             </tr>
         </tbody></table>
     </body>
