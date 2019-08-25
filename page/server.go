@@ -93,7 +93,7 @@ func StartServer(port int) error {
     srv.userPage = template.New("")
     _, err = srv.userPage.Parse(pageTemplate)
     if err != nil {
-        return err
+        return errors.Wrap(err, "Failed to parse template page")
     }
 
     go func() {
