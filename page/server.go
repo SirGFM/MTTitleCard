@@ -76,7 +76,8 @@ func (p *pageServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     }
 }
 
-func StarServer(port int) error {
+// StartServer starts a new server in the requested port
+func StartServer(port int) error {
     var err error
 
     srv.httpServer = http.Server {

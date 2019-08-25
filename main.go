@@ -54,7 +54,7 @@ func testSrlTitleCard() {
 }
 
 func testPage() {
-    err := page.StarServer(8080)
+    err := page.StartServer(8080)
     if err != nil {
         panic(fmt.Sprintf("Failed to start server: %+v", err))
     }
