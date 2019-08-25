@@ -32,10 +32,10 @@ body {
 }
 .stats {
     margin: 1.5em;
-    width: 90%;
+    width: 95%;
 }
 .stats_label {
-    width: 80%;
+    width: 70%;
 }
 .stats_field {
 }
@@ -79,7 +79,12 @@ const pageTemplate = `
             </tr>
             <tr>
                 <td class="stats_label" id="stats_label">Losses</td>
-                <td class="stats_field" id="stats_field">{{.Losses}}</td>
+                <td class="stats_field" id="stats_field">
+                    {{.Losses}}
+                    {{if eq .Losses 0 }}
+                        (Flawless!)
+                    {{end}}
+                </td>
             </tr>
             <tr>
                 <td class="stats_label" id="stats_label">Win Rate</td>
