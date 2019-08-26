@@ -26,11 +26,6 @@ type Data struct {
 // _cache of already downloaded and parsed users
 var _cache map[string]Data = map[string]Data{}
 
-var arg mtcareers.Arg = mtcareers.Arg {
-    CredentialToken: "credentials.json",
-    SpreadsheetId: "1LE6z_xRRxtIcCKYDzH9ag_1Iry6iHlqhpc09mqTZfiU",
-}
-
 // GenerateData downloads, parses and caches data for a given username.
 // srlUsername and username should be the same.
 func GenerateData(srlUsername, username string) error {
@@ -44,7 +39,7 @@ func GenerateData(srlUsername, username string) error {
         return errors.Wrap(err, "Failed to get SRL Profile to generate user data")
     }
 
-    sh, err := mtcareers.GetSheet(&arg)
+    sh, err := mtcareers.GetSheet()
     if err != nil {
         return errors.Wrap(err, "Failed to retrieve MT Career spreadsheet to generate user data")
     }

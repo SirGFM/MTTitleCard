@@ -5,6 +5,7 @@ import (
     "encoding/json"
     "fmt"
     "github.com/pkg/errors"
+    "github.com/SirGFM/MTTitleCard/config"
     "io"
     "io/ioutil"
     "net/http"
@@ -50,13 +51,10 @@ type SrlApiProfile struct {
     Game SrlGame
 }
 
-// XXX: This was retrieved from SRL's profile page... sowwy D:
-var client_id string
-
 // getUserAvatar URL from Twitch's API
 func getUserAvatar(channel string) (string, error) {
     url := fmt.Sprintf("https://api.twitch.tv/kraken/channels/%s?client_id=%s",
-            channel, client_id)
+            channel, config.Get().TwitchClientID)
     resp, err := http.Get(url)
     if err != nil {
         return "", errors.Wrap(err, "Failed to get twitch info")

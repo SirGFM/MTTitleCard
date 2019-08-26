@@ -1,8 +1,7 @@
 package main
 
 import (
-    "github.com/SirGFM/MTTitleCard/mtcareers"
-    "github.com/SirGFM/MTTitleCard/srlprofile"
+    "github.com/SirGFM/MTTitleCard/config"
     "github.com/SirGFM/MTTitleCard/page"
     "flag"
     "fmt"
@@ -10,51 +9,17 @@ import (
     "os/signal"
 )
 
-func testMtCareers() {
-    arg := mtcareers.Arg {
-        CredentialToken: "credentials.json",
-        SpreadsheetId: "1LE6z_xRRxtIcCKYDzH9ag_1Iry6iHlqhpc09mqTZfiU",
-    }
-    sh, err := mtcareers.GetSheet(&arg)
-    if err != nil {
-        panic(fmt.Sprintf("Failed to load sheet: %+v", err))
-    }
+func main() {
+    var configFile string
 
-    err = sh.GetTourneyInfo()
-    if err != nil {
-        panic(fmt.Sprintf("Failed to get tourney info: %+v", err))
-    }
-    usr, err := sh.GetUserInfo("GFM")
-    if err != nil {
-        panic(fmt.Sprintf("Failed to get user info: %+v", err))
-    }
-    fmt.Printf("%+v\n", usr)
-}
-
-
-func testSrlTitleCard() {
-    var srlURL string
-    var srlUser string
-
-    flag.StringVar(&srlURL, "srlURL", "", "URL of the player's SRL page")
-    flag.StringVar(&srlUser, "srlUser", "", "Username of player on SRL")
+    flag.StringVar(&configFile, "config", "", "Path to a config file")
     flag.Parse()
-
-    if srlURL == "" && srlUser == "" {
-        panic("Missing either -srlURL or -srlUser")
+    err := config.Load(configFile)
+    if err != nil {
+        panic(fmt.Sprintf("Failed to load the configuratin: %+v", err))
     }
 
-    if srlURL != "" {
-        u := srlprofile.Get(srlURL);
-        fmt.Printf("%+v\n", u)
-    } else if srlUser != "" {
-        u, err := srlprofile.GetFromUsername(srlUser);
-        fmt.Printf("%+v\nerr: %+v\n", u, err)
-    }
-}
-
-func testPage() {
-    err := page.StartServer(8080)
+    err = page.StartServer(config.Get().Port)
     if err != nil {
         panic(fmt.Sprintf("Failed to start server: %+v", err))
     }
@@ -69,10 +34,4 @@ func testPage() {
     signal.Notify(signalTrap, os.Interrupt)
 
     <-wait
-}
-
-func main() {
-    //testMtCareers()
-    //testSrlTitleCard()
-    testPage()
 }

@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "fmt"
     "github.com/pkg/errors"
+    mttcConfig "github.com/SirGFM/MTTitleCard/config"
     "golang.org/x/net/context"
     "golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
@@ -25,30 +26,18 @@ type Sheet struct {
     LatestEntrants int
 }
 
-type Arg struct {
-    // Path to the API token file, if not the default path
-    ApiToken string
-    // Path to JSON downloaded after enabling the API
-    CredentialToken string
-    // ID of the spreadsheet being accessed
-    SpreadsheetId string
-}
-
 // Retrieve a token, saves the token, then returns the generated client.
-func getClient(config *oauth2.Config, arg *Arg) (*http.Client, error) {
+func getClient(config *oauth2.Config) (*http.Client, error) {
     // The file token.json stores the user's access and refresh tokens, and is
     // created automatically when the authorization flow completes for the first
     // time.
-    if arg.ApiToken == "" {
-        arg.ApiToken = "token.json"
-    }
-    tok, err := tokenFromFile(arg.ApiToken)
+    tok, err := tokenFromFile(mttcConfig.Get().TokenFile)
     if err != nil {
         tok, err = getTokenFromWeb(config)
         if err != nil {
             return nil, errors.Wrap(err, "Failed to retrieve the OAuth token")
         }
-        err := saveToken(arg.ApiToken, tok)
+        err := saveToken(mttcConfig.Get().TokenFile, tok)
         if err != nil {
             return nil, errors.Wrap(err, "Failed to save the OAuth token")
         }
@@ -159,8 +148,8 @@ func cellToStr(cell interface{}) (str string, err error) {
 }
 
 // GetSheet retrieves an object for accessing an spreadsheet
-func GetSheet(arg *Arg) (*Sheet, error) {
-    b, err := ioutil.ReadFile(arg.CredentialToken)
+func GetSheet() (*Sheet, error) {
+    b, err := ioutil.ReadFile(mttcConfig.Get().CredentialFile)
     if err != nil {
         return nil, errors.Wrap(err, "Unable to read client secret file")
     }
@@ -170,7 +159,7 @@ func GetSheet(arg *Arg) (*Sheet, error) {
     if err != nil {
         return nil, errors.Wrap(err, "Unable to parse client secret file to config")
     }
-    client, err := getClient(config, arg)
+    client, err := getClient(config)
     if err != nil {
         return nil, errors.Wrap(err, "Failed to initialize the Google API client")
     }
@@ -180,7 +169,7 @@ func GetSheet(arg *Arg) (*Sheet, error) {
     if err != nil {
         return nil, errors.Wrap(err, "Unable to retrieve Sheets accessor")
     }
-    sheet.id = arg.SpreadsheetId
+    sheet.id = mttcConfig.Get().MtCareerSpreasheet
 
     return &sheet, nil
 }

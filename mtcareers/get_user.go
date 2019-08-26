@@ -4,6 +4,7 @@ import (
     goErrors "errors"
     "fmt"
     "github.com/pkg/errors"
+    "github.com/SirGFM/MTTitleCard/config"
     "strconv"
 )
 
@@ -14,32 +15,6 @@ import (
 // This can be more easily (or in a more organized fashion) by doing:
 //     fmt.Sprintf(baseRange, "TEST", "A", 5, "D", 20)
 const baseRange = "%s!%s%d:%s%d"
-
-// Spreadsheet info used to extract the number of entrants
-const torneyInfoSheet = "STATS"
-const tourneyTotalCol = "C"
-const currentTotalCol = "F"
-const totalsRow = 16
-
-// Spreadsheet info used to extract the tournament entrants
-const userInfoSheet = "MT Career"
-const userFirstCol = "A"
-const userLastCol = "H"
-const userFirstRow = 2
-
-// Index of user-related info within the spreadsheet
-const joinedMtIdx = 0
-const nameIdx = 1
-const torneyCountIdx = 2
-const winIdx = 3
-const loseIdx = 4
-const draftIdx = 7
-
-// Spreadsheet info used to extract the entrants standings
-const standingSheet = "MT Career Standings"
-const standingsFirstCol = "A"
-const standingsLastCol = "S"
-const standingsFirstRow = 1
 
 // _tourneyCache stores the downloaded tournament info spreadsheet
 var _tourneyCache [][]interface{} = nil
@@ -82,11 +57,11 @@ func (s *Sheet) GetTourneyInfo() error {
     }
 
     _range := fmt.Sprintf(baseRange,
-        torneyInfoSheet,
-        tourneyTotalCol,
-        totalsRow,
-        currentTotalCol,
-        totalsRow+1)
+        config.Get().TourneyInfo.SheetName,
+        config.Get().TourneyInfo.FirstColumn,
+        config.Get().TourneyInfo.FirstRow,
+        config.Get().TourneyInfo.LastColumn,
+        config.Get().TourneyInfo.FirstRow+1)
     resp, err := s.srv.Spreadsheets.Values.Get(s.id, _range).Do()
     if err != nil {
         return errors.Wrap(err, "Failed to get the number of entrants: Unable to retrieve data from sheet")
@@ -111,12 +86,12 @@ func (s *Sheet) GetTourneyInfo() error {
 
 // rowToUser convert a row, retrieved from the spreadsheet, into a User
 func rowToUser(row []interface{}) (u User, err error) {
-    u.Username, err = cellToStr(row[nameIdx])
+    u.Username, err = cellToStr(row[config.Get().NameIdx])
     if err != nil {
         err = errors.Wrap(err, "Failed to parse Username from sheet")
         return
     }
-    u.FirstMT, err = cellToStr(row[joinedMtIdx])
+    u.FirstMT, err = cellToStr(row[config.Get().JoinedMtIdx])
     if err != nil {
         err = errors.Wrap(err, "Failed to parse FirstMT from sheet")
         return
@@ -124,22 +99,22 @@ func rowToUser(row []interface{}) (u User, err error) {
     if u.FirstMT[0] == '.' {
         u.FirstMT = u.FirstMT[1:]
     }
-    u.TourneyCount, err = cellToInt(row[torneyCountIdx])
+    u.TourneyCount, err = cellToInt(row[config.Get().TorneyCountIdx])
     if err != nil {
         err = errors.Wrap(err, "Failed to parse TourneyCount from sheet")
         return
     }
-    u.WinCount, err = cellToInt(row[winIdx])
+    u.WinCount, err = cellToInt(row[config.Get().WinIdx])
     if err != nil {
         err = errors.Wrap(err, "Failed to parse WinCount from sheet")
         return
     }
-    u.LoseCount, err = cellToInt(row[loseIdx])
+    u.LoseCount, err = cellToInt(row[config.Get().LoseIdx])
     if err != nil {
         err = errors.Wrap(err, "Failed to parse LoseCount from sheet")
         return
     }
-    u.DraftPoints, err = cellToFloat(row[draftIdx])
+    u.DraftPoints, err = cellToFloat(row[config.Get().DraftIdx])
     // XXX: if err == nil, errors.Wrap returns nil as well!
     err = errors.Wrap(err, "Failed to parse DraftPoints from sheet")
     return
@@ -183,10 +158,10 @@ func (s *Sheet) GetUserInfo(username string) (u User, err error) {
     // tournament
     if _tourneyCache == nil {
         _range := fmt.Sprintf(baseRange,
-            userInfoSheet,
-            userFirstCol,
-            userFirstRow,
-            userLastCol,
+            config.Get().UserInfo.SheetName,
+            config.Get().UserInfo.FirstColumn,
+            config.Get().UserInfo.FirstRow,
+            config.Get().UserInfo.LastColumn,
             s.TotalEntrants)
         resp, gerr := s.srv.Spreadsheets.Values.Get(s.id, _range).Do()
         if gerr != nil {
@@ -198,10 +173,10 @@ func (s *Sheet) GetUserInfo(username string) (u User, err error) {
     }
     if _standingsCache == nil {
         _range := fmt.Sprintf(baseRange,
-            standingSheet,
-            standingsFirstCol,
-            standingsFirstRow,
-            standingsLastCol,
+            config.Get().StandingsInfo.SheetName,
+            config.Get().StandingsInfo.FirstColumn,
+            config.Get().StandingsInfo.FirstRow,
+            config.Get().StandingsInfo.LastColumn,
             s.TotalEntrants)
         resp, gerr := s.srv.Spreadsheets.Values.Get(s.id, _range).Do()
         if gerr != nil {

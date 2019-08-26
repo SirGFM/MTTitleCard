@@ -3,7 +3,7 @@ package page
 import (
     "fmt"
     "github.com/pkg/errors"
-    "io"
+    "github.com/SirGFM/MTTitleCard/config"
     "html/template"
     "net/http"
 )
@@ -34,7 +34,7 @@ type request struct {
 func (r *request) getCss() {
     r.w.Header().Set("Content-Type", "text/css")
     r.w.WriteHeader(http.StatusOK)
-    io.WriteString(r.w, style)
+    config.Get().WriteCss(r.w, []byte(style))
 }
 
 // getUserData parse username info, fit it into the template and return the
@@ -105,7 +105,7 @@ func StartServer(port int) error {
     }
 
     srv.userPage = template.New("")
-    _, err = srv.userPage.Parse(pageTemplate)
+    _, err = srv.userPage.Parse(config.Get().PageTemplate(pageTemplate))
     if err != nil {
         return errors.Wrap(err, "Failed to parse template page")
     }
