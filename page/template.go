@@ -88,7 +88,7 @@ const pageTemplate = `
             </tr>
             <tr>
                 <td class="stats_label" id="stats_label">Win Rate</td>
-                <td class="stats_field" id="stats_field">{{.WinRate}}</td>
+                <td class="stats_field" id="stats_field">{{.WinRate}}%</td>
             </tr>
             <tr>
                 <td class="stats_label" id="stats_label">Draft Points</td>
