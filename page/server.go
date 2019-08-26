@@ -63,6 +63,8 @@ func (r *request) get() {
         "index.html":
 
         http.Error(r.w, "Index still not implemented...", http.StatusNotFound)
+    case "favicon.ico":
+        http.Error(r.w, "Missing a favicon...", http.StatusNotFound)
     default:
         r.getUserData(r.path)
     }
