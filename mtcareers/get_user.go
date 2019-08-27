@@ -6,6 +6,7 @@ import (
     "github.com/pkg/errors"
     "github.com/SirGFM/MTTitleCard/config"
     "strconv"
+    "strings"
 )
 
 // baseRange formats the lookup string for retrieving a range from a
@@ -152,6 +153,41 @@ func (u *User) setHighestPosition(row []interface{}) (err error) {
     return
 }
 
+// colToStr try to retrieve a string from an interface, return "" if it fails
+func colToStr(c interface{}) string {
+    s, ok := c.(string)
+    if !ok {
+        return ""
+    }
+    return s
+}
+
+// getUserRow, doing a case insensitive look up
+func getUserRow(username string, rows[][]interface{}) []interface{} {
+    name := strings.ToLower(username)
+    // First assume that the list is sorted and try a binary search
+    for l, r := 0, len(rows) - 1; l <= r; {
+        m := (l + r) / 2
+        row := rows[m]
+        switch strings.Compare(name, strings.ToLower(colToStr(row[1]))) {
+        case 0:
+            return row
+        case 1:
+            l = m + 1
+        case -1:
+            r = m - 1
+        }
+    }
+    // If not found, look sequentially
+    for _, row := range rows {
+        if strings.ToLower(colToStr(row[1])) == name {
+            return row
+        }
+    }
+
+    return nil
+}
+
 // GetUserInfo from the MT Career spreadsheet
 func (s *Sheet) GetUserInfo(username string) (u User, err error) {
     // Download and cache the participants info and standings through every
@@ -204,13 +240,12 @@ func (s *Sheet) GetUserInfo(username string) (u User, err error) {
     }
 
     // Retrieve the user info from the previously downloaded data
-    err = errors.New(fmt.Sprintf("User not found: '%s'", username))
-    for _, row := range _tourneyCache {
-        if row[1] == username {
-            u, err = rowToUser(row)
-            break
-        }
+    row := getUserRow(username, _tourneyCache)
+    if row == nil {
+        err = errors.New(fmt.Sprintf("User not found: '%s'", username))
+        return
     }
+    u, err = rowToUser(row)
     if err == nil {
         for _, row := range _standingsCache {
             if row[0] == username {
