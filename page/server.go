@@ -4,6 +4,7 @@ import (
     "fmt"
     "github.com/pkg/errors"
     "github.com/SirGFM/MTTitleCard/config"
+    "github.com/SirGFM/MTTitleCard/mtcareers"
     "html/template"
     "net/http"
 )
@@ -12,6 +13,8 @@ import (
 type pageServer struct {
     // userPage is a template used to fill a user's info
     userPage *template.Template
+    // renewPage is a template used to renew the server's token
+    renewPage *template.Template
     // httpServer handling requests from the client
     httpServer *http.Server
 }
@@ -53,6 +56,29 @@ func (r *request) getUserData(username string) {
     }
 }
 
+// Data supplied to the renew token page
+type RenewData struct {
+    Url string
+}
+
+// getRenewToken and display it to the client, with a form to post the
+// renewed token
+func (r *request) getRenewToken() {
+    url, err := mtcareers.CheckToken()
+    if err != nil {
+        serr := fmt.Sprintf("%+v", err)
+        http.Error(r.w, serr, http.StatusNotFound)
+        fmt.Println(serr)
+        return
+    }
+    d := RenewData {
+        Url: url,
+    }
+    r.w.Header().Set("Content-Type", "text/html")
+    r.w.WriteHeader(http.StatusOK)
+    r.p.renewPage.Execute(r.w, d)
+}
+
 // get handles GET requests
 func (r *request) get() {
     switch r.path {
@@ -62,12 +88,37 @@ func (r *request) get() {
         "index",
         "index.html":
 
-        http.Error(r.w, "Index still not implemented...", http.StatusNotFound)
+        r.getRenewToken()
     case "favicon.ico":
         http.Error(r.w, "Missing a favicon...", http.StatusNotFound)
     default:
         r.getUserData(r.path)
     }
+}
+
+// post handles POST requests
+func (r *request) post() {
+    // XXX: This was really rushed... D:
+    err := r.req.ParseForm()
+    if err != nil {
+        serr := fmt.Sprintf("%+v", err)
+        http.Error(r.w, serr, http.StatusNotFound)
+        fmt.Println(serr)
+        return
+    }
+
+    tok := r.req.PostFormValue("token")
+    err = mtcareers.SaveAuthentication(tok)
+    if err != nil {
+        serr := fmt.Sprintf("%+v", err)
+        http.Error(r.w, serr, http.StatusNotFound)
+        fmt.Println(serr)
+        return
+    }
+
+    r.w.Header().Set("Content-Type", "text/html")
+    r.w.WriteHeader(http.StatusOK)
+    r.w.Write([]byte("<h1>Token saved successfully!</h1>"))
 }
 
 // ServeHTTP is called by Go's http package whenever a new HTTP request arrives
@@ -87,7 +138,7 @@ func (p *pageServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     case "GET":
         r.get()
     case "POST":
-        fallthrough
+        r.post()
     default:
         w.WriteHeader(http.StatusMethodNotAllowed)
     }
@@ -110,6 +161,12 @@ func StartServer(port int) error {
     _, err = srv.userPage.Parse(config.Get().PageTemplate(pageTemplate))
     if err != nil {
         return errors.Wrap(err, "Failed to parse template page")
+    }
+
+    srv.renewPage = template.New("")
+    _, err = srv.renewPage.Parse(renewTemplate)
+    if err != nil {
+        return errors.Wrap(err, "Failed to parse renew server template page")
     }
 
     go func() {

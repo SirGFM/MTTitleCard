@@ -28,21 +28,62 @@ type Sheet struct {
 
 // Retrieve a token, saves the token, then returns the generated client.
 func getClient(config *oauth2.Config) (*http.Client, error) {
-    // The file token.json stores the user's access and refresh tokens, and is
-    // created automatically when the authorization flow completes for the first
-    // time.
+    authToken, err := CheckToken()
+    if err != nil {
+        return nil, errors.Wrap(err, "Failed to check OAuth token")
+    } else if authToken != "" {
+        serr := fmt.Sprintf("OAuth token not found!\n\nAccess http://localhost:%d\n", mttcConfig.Get().Port)
+        return nil, errors.New(serr)
+    }
+
+    // This shouldn't ever fail, since the token has already been checked
     tok, err := tokenFromFile(mttcConfig.Get().TokenFile)
     if err != nil {
-        tok, err = getTokenFromWeb(config)
-        if err != nil {
-            return nil, errors.Wrap(err, "Failed to retrieve the OAuth token")
-        }
-        err := saveToken(mttcConfig.Get().TokenFile, tok)
-        if err != nil {
-            return nil, errors.Wrap(err, "Failed to save the OAuth token")
-        }
+        return nil, errors.Wrap(err, "Failed to retrieve the OAuth token")
     }
     return config.Client(context.Background(), tok), nil
+}
+
+// Get the OAuth2 config for the given credential file
+func getConfig() (*oauth2.Config, error) {
+    b, err := ioutil.ReadFile(mttcConfig.Get().CredentialFile)
+    if err != nil {
+        return nil, errors.Wrap(err, "Unable to read client secret file")
+    }
+
+    // If modifying these scopes, delete your previously saved token.json.
+    config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/spreadsheets.readonly")
+    // XXX: if err == nil, errors.Wrap returns nil as well!
+    return config, errors.Wrap(err, "Unable to parse client secret file to config")
+}
+
+// CheckToken. If it's not valid (mainly because it doesn't exist), generate
+// and return a auth URL.
+func CheckToken() (string, error) {
+    _, err := tokenFromFile(mttcConfig.Get().TokenFile)
+    if err != nil {
+        config, err := getConfig()
+        if err != nil {
+            return "", errors.Wrap(err, "Unable to parse client secret file to config")
+        }
+        return config.AuthCodeURL("state-token", oauth2.AccessTypeOffline), nil
+    }
+    return "", nil
+}
+
+// SaveAuthentication finishes authenticating with OAuth2 and saves the token
+func SaveAuthentication(authCode string) error {
+    config, err := getConfig()
+    if err != nil {
+        return errors.Wrap(err, "Unable to parse client secret file to config")
+    }
+    tok, err := config.Exchange(context.TODO(), authCode)
+    if err != nil {
+        return errors.Wrap(err, "Unable to retrieve token from web")
+    }
+    err = saveToken(mttcConfig.Get().TokenFile, tok)
+    // XXX: if err == nil, errors.Wrap returns nil as well!
+    return errors.Wrap(err, "Failed to save the OAuth token")
 }
 
 // Request a token from the web, then returns the retrieved token.
@@ -149,13 +190,8 @@ func cellToStr(cell interface{}) (str string, err error) {
 
 // GetSheet retrieves an object for accessing an spreadsheet
 func GetSheet() (*Sheet, error) {
-    b, err := ioutil.ReadFile(mttcConfig.Get().CredentialFile)
-    if err != nil {
-        return nil, errors.Wrap(err, "Unable to read client secret file")
-    }
-
     // If modifying these scopes, delete your previously saved token.json.
-    config, err := google.ConfigFromJSON(b, "https://www.googleapis.com/auth/spreadsheets.readonly")
+    config, err := getConfig()
     if err != nil {
         return nil, errors.Wrap(err, "Unable to parse client secret file to config")
     }

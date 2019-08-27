@@ -106,3 +106,39 @@ const pageTemplate = `
     </body>
 </html>
 `
+
+// renewTemplate used to renew the server's token
+const renewTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title> MT Title Card </title>
+        <meta charset="UTF-8">
+    </head>
+    <body>
+        {{if eq .Url "" }}
+            <h1> Looks like the token is good! </h1>
+        {{else}}
+            <h1> Oh no! Looks like the token must be renegerated! </h1>
+
+            <p> Click the link bellow to generate a new token, the submit it! </p>
+
+            </br>
+            </br>
+            <a href="{{.Url}}" target="_blank"> {{.Url}} </a>
+            </br>
+            </br>
+
+            <form action="" method="post">
+                <div>
+                    <label for="token">Enter the generate token: </label>
+                    <input type="text" name="token" id="token" required>
+                </div>
+                <div>
+                    <input type="submit" value="Submit!">
+                </div>
+            </form>
+        {{end}}
+    </body>
+</html>
+`
