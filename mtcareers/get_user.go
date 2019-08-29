@@ -163,13 +163,13 @@ func colToStr(c interface{}) string {
 }
 
 // getUserRow, doing a case insensitive look up
-func getUserRow(username string, rows[][]interface{}) []interface{} {
+func getUserRow(username string, nameIdx int, rows[][]interface{}) []interface{} {
     name := strings.ToLower(username)
     // First assume that the list is sorted and try a binary search
     for l, r := 0, len(rows) - 1; l <= r; {
         m := (l + r) / 2
         row := rows[m]
-        switch strings.Compare(name, strings.ToLower(colToStr(row[1]))) {
+        switch strings.Compare(name, strings.ToLower(colToStr(row[nameIdx]))) {
         case 0:
             return row
         case 1:
@@ -180,7 +180,7 @@ func getUserRow(username string, rows[][]interface{}) []interface{} {
     }
     // If not found, look sequentially
     for _, row := range rows {
-        if strings.ToLower(colToStr(row[1])) == name {
+        if strings.ToLower(colToStr(row[nameIdx])) == name {
             return row
         }
     }
@@ -240,21 +240,17 @@ func (s *Sheet) GetUserInfo(username string) (u User, err error) {
     }
 
     // Retrieve the user info from the previously downloaded data
-    row := getUserRow(username, _tourneyCache)
+    row := getUserRow(username, config.Get().NameIdx, _tourneyCache)
     if row == nil {
         err = errors.New(fmt.Sprintf("User not found: '%s'", username))
         return
     }
     u, err = rowToUser(row)
     if err == nil {
-        for _, row := range _standingsCache {
-            if row[0] == username {
-                err = u.setHighestPosition(row)
-                if errors.Cause(err) == errNoPlacing {
-                    err = nil
-                }
-                break
-            }
+        posRow := getUserRow(username, 0, _standingsCache)
+        err = u.setHighestPosition(posRow)
+        if errors.Cause(err) == errNoPlacing {
+            err = nil
         }
     }
 
