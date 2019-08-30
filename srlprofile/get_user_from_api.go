@@ -8,6 +8,7 @@ import (
     "github.com/SirGFM/MTTitleCard/config"
     "io"
     "io/ioutil"
+    "log"
     "net/http"
     "time"
 )
@@ -117,7 +118,7 @@ func decodeUser(dec *json.Decoder) (u User, err error) {
     u.SrlAvatar, err = getUserAvatar(api.Player.Channel)
     if err != nil {
         // XXX: Failing to get the avatar isn't (imo) a critical error...
-        fmt.Printf("Failed to get the player's avatar:\n\n%+v\n", err)
+        log.Printf("Failed to get the player's avatar:\n\n%+v\n", err)
         err = nil
     }
     return

@@ -6,6 +6,7 @@ import (
     "github.com/SirGFM/MTTitleCard/config"
     "github.com/SirGFM/MTTitleCard/mtcareers"
     "html/template"
+    "log"
     "net/http"
 )
 
@@ -52,7 +53,7 @@ func (r *request) getUserData(username string) {
     } else {
         serr := fmt.Sprintf("%+v", err)
         http.Error(r.w, serr, http.StatusNotFound)
-        fmt.Println(serr)
+        log.Print(serr)
     }
 }
 
@@ -68,7 +69,7 @@ func (r *request) getRenewToken() {
     if err != nil {
         serr := fmt.Sprintf("%+v", err)
         http.Error(r.w, serr, http.StatusNotFound)
-        fmt.Println(serr)
+        log.Print(serr)
         return
     }
     d := RenewData {
@@ -103,7 +104,7 @@ func (r *request) post() {
     if err != nil {
         serr := fmt.Sprintf("%+v", err)
         http.Error(r.w, serr, http.StatusNotFound)
-        fmt.Println(serr)
+        log.Print(serr)
         return
     }
 
@@ -112,7 +113,7 @@ func (r *request) post() {
     if err != nil {
         serr := fmt.Sprintf("%+v", err)
         http.Error(r.w, serr, http.StatusNotFound)
-        fmt.Println(serr)
+        log.Print(serr)
         return
     }
 
@@ -123,6 +124,7 @@ func (r *request) post() {
 
 // ServeHTTP is called by Go's http package whenever a new HTTP request arrives
 func (p *pageServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+    log.Printf("New request from %+v: %s %+v", req.RemoteAddr, req.Method, req.URL.Path)
     var r request = request {
         p: p,
         w: w,
@@ -170,7 +172,7 @@ func StartServer(port int) error {
     }
 
     go func() {
-        fmt.Println("waiting...")
+        log.Print("Waiting...")
         srv.httpServer.ListenAndServe()
     } ()
 

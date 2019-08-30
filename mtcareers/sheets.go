@@ -10,6 +10,7 @@ import (
     "golang.org/x/oauth2/google"
     "google.golang.org/api/sheets/v4"
     "io/ioutil"
+    "log"
     "net/http"
     "os"
     "strconv"
@@ -117,7 +118,7 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 
 // Saves a token to a file path.
 func saveToken(path string, token *oauth2.Token) error {
-    fmt.Printf("Saving credential file to: %s\n", path)
+    log.Printf("Saving credential file to: %s", path)
     f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
     if err != nil {
         return errors.Wrap(err, "Unable to cache oauth token")

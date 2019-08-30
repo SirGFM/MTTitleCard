@@ -3,9 +3,9 @@ package config
 import (
     "encoding/json"
     "github.com/pkg/errors"
-    "fmt"
     "io"
     "io/ioutil"
+    "log"
     "os"
 )
 
@@ -119,11 +119,11 @@ func Load(path string) error {
     }
 
     if path == "" {
-        fmt.Println("Using the default configuration...")
+        log.Print("Using the default configuration...")
         config = defaultConfig
         return nil
     }
-    fmt.Printf("Loading the configuration from '%s'...\n", path)
+    log.Printf("Loading the configuration from '%s'...", path)
     f, err := os.Open(path)
     if err != nil {
         return errors.Wrap(err, "Failed to open config file")
