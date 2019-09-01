@@ -25,6 +25,12 @@ type Data struct {
 
 // _cache of already downloaded and parsed users
 var _cache map[string]Data = map[string]Data{}
+// _fmtNumber maps the unit of a position to its suffix
+var _fmtNumber map[int]string = map[int]string {
+    1: "%dst",
+    2: "%dnd",
+    3: "%drd",
+}
 
 // GenerateData downloads, parses and caches data for a given username.
 // srlUsername and username should be the same.
@@ -59,17 +65,14 @@ func GenerateData(srlUsername, username string) error {
 // generateDataFromUser merges the SRL User and the MT Career User in a single
 // structure accepted by the template
 func generateDataFromUser(srlUser srlprofile.User, mtUser mtcareers.User) Data {
-    var pos string
-    switch p := mtUser.HighestPosition; p % 10 {
-    case 1:
-        pos = fmt.Sprintf("%dst", p)
-    case 2:
-        pos = fmt.Sprintf("%dnd", p)
-    case 3:
-        pos = fmt.Sprintf("%drd", p)
-    default:
-        pos = fmt.Sprintf("%dth", p)
+    // For most numbers (and for 11, 12 and 13), just add a "th". In every other
+    // case, simply add the correct suffix (e.g., 21st).
+    unit := mtUser.HighestPosition % 10
+    f, ok := _fmtNumber[unit]
+    if !ok || (mtUser.HighestPosition % 100) - unit == 10 {
+        f = "%dth"
     }
+    pos := fmt.Sprintf(f, mtUser.HighestPosition)
 
     var rateStr string
     if mtUser.WinCount + mtUser.LoseCount != 0 {
