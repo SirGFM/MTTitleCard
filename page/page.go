@@ -51,7 +51,14 @@ func GenerateData(srlUsername, username string) error {
     if err != nil {
         return errors.Wrap(err, "Failed to get MT Career user info to generate user data")
     }
+    _cache[username] = generateDataFromUser(srlUser, mtUser)
 
+    return nil
+}
+
+// generateDataFromUser merges the SRL User and the MT Career User in a single
+// structure accepted by the template
+func generateDataFromUser(srlUser srlprofile.User, mtUser mtcareers.User) Data {
     var pos string
     switch p := mtUser.HighestPosition; p % 10 {
     case 1:
@@ -73,7 +80,8 @@ func GenerateData(srlUsername, username string) error {
     } else {
         rateStr = "N/A"
     }
-    var d Data = Data {
+
+    return Data {
         Channel: srlUser.Channel,
         Username: mtUser.Username,
         Avatar: srlUser.SrlAvatar,
@@ -85,7 +93,4 @@ func GenerateData(srlUsername, username string) error {
         DraftPoints: int(mtUser.DraftPoints),
         HighestPlacement: pos,
     }
-    _cache[username] = d
-
-    return nil
 }
