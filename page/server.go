@@ -45,16 +45,32 @@ func (r *request) getCss() {
 // resulting page. In case of error, the stack trace is returned back to the
 // client
 func (r *request) getUserData(username string) {
+    var data Data
+
     err := GenerateData(username, username)
     if err == nil {
-        r.w.Header().Set("Content-Type", "text/html")
-        r.w.WriteHeader(http.StatusOK)
-        r.p.userPage.Execute(r.w, _cache[username])
+        data = _cache[username]
+
+        // XXX: The careers was last updated for MT14,
+        //      so MtCount is wrong... :grimacing:
+        data.MtCount += 1
     } else {
+        data = Data {
+            Channel: "It's a mystery",
+            Username: username,
+            Joined: "Just now!",
+            WinRate: "0",
+            HighestPlacement: "This round",
+            MtCount: 1,
+        }
+
         serr := fmt.Sprintf("%+v", err)
-        http.Error(r.w, serr, http.StatusNotFound)
         log.Print(serr)
     }
+
+    r.w.Header().Set("Content-Type", "text/html")
+    r.w.WriteHeader(http.StatusOK)
+    r.p.userPage.Execute(r.w, data)
 }
 
 // Data supplied to the renew token page
