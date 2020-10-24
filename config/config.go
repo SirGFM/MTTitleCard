@@ -84,9 +84,9 @@ func (c Config) PageTemplate(fallback string) string {
     return fallback
 }
 
-// Load the supplied configuration on file, or the default configuration
-func Load(path string) error {
-    defaultConfig := Config {
+// Retrieve the default configurations
+func GetDefault() Config {
+    return Config {
         Port: 8080,
         TwitchClientID: "",
         CredentialFile: "credentials.json",
@@ -117,12 +117,38 @@ func Load(path string) error {
         LoseIdx: 4,
         DraftIdx: 7,
     }
+}
 
+// Load the supplied configuration
+func LoadConfig(customConfig Config) error {
+    var err error
+
+    if customConfig.CssFile != "" {
+        customConfig.cssData, err = ioutil.ReadFile(customConfig.CssFile)
+        if err != nil {
+            return errors.Wrap(err, "Failed to read the custom CSS file")
+        }
+    }
+
+    if customConfig.TemplateFile != "" {
+        customConfig.templateData, err = ioutil.ReadFile(customConfig.TemplateFile)
+        if err != nil {
+            return errors.Wrap(err, "Failed to read the custom template file")
+        }
+    }
+
+    config = customConfig
+    return nil
+}
+
+// Load the supplied configuration on file, or the default configuration
+func Load(path string) error {
     if path == "" {
         log.Print("Using the default configuration...")
-        config = defaultConfig
+        config = GetDefault()
         return nil
     }
+
     log.Printf("Loading the configuration from '%s'...", path)
     f, err := os.Open(path)
     if err != nil {
@@ -130,21 +156,12 @@ func Load(path string) error {
     }
     defer f.Close()
     dec := json.NewDecoder(f)
-    err = dec.Decode(&config)
+
+    var _config Config
+    err = dec.Decode(&_config)
     if err != nil {
         return errors.Wrap(err, "Failed to decode config JSON")
     }
 
-    if config.CssFile != "" {
-        config.cssData, err = ioutil.ReadFile(config.CssFile)
-        if err != nil {
-            return errors.Wrap(err, "Failed to read the custom CSS file")
-        }
-    }
-
-    if config.TemplateFile != "" {
-        config.templateData, err = ioutil.ReadFile(config.TemplateFile)
-    }
-    // XXX: if err == nil, errors.Wrap returns nil as well!
-    return errors.Wrap(err, "Failed to read the custom template file")
+    return LoadConfig(_config)
 }
