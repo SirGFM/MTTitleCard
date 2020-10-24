@@ -47,7 +47,7 @@ const pageTemplate = `
 <html lang="en">
     <head>
         <title> {{.Username}}'s MT Title Card </title>
-        <link rel="stylesheet" href="/style.css">
+        <link rel="stylesheet" href="{{.ServiceUri}}/style.css">
         <meta charset="UTF-8">
     </head>
     <body>

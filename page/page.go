@@ -21,6 +21,7 @@ type Data struct {
     WinRate string
     DraftPoints int
     HighestPlacement string
+    ServiceUri string
 }
 
 // _cache of already downloaded and parsed users

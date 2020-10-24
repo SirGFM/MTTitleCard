@@ -67,6 +67,7 @@ func (r *request) getUserData(username string) {
         serr := fmt.Sprintf("%+v", err)
         log.Print(serr)
     }
+    data.ServiceUri = config.Get().ServiceUri
 
     r.w.Header().Set("Content-Type", "text/html")
     r.w.WriteHeader(http.StatusOK)

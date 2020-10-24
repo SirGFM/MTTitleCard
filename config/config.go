@@ -54,6 +54,8 @@ type Config struct {
     TemplateFile string
     // Template for the player page
     templateData []byte
+    // URI of the service within the server. Mostly used to set the path to the CSS file.
+    ServiceUri string
 }
 
 // Store the loaded configuration
