@@ -10,6 +10,11 @@ import (
     "net/http"
 )
 
+// Public pageServer interface
+type PageServer interface {
+    ServeHTTP(http.ResponseWriter, *http.Request)
+}
+
 // pageServer wraps the request handler, and everything used by it
 type pageServer struct {
     // userPage is a template used to fill a user's info
@@ -163,6 +168,32 @@ func (p *pageServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     }
 }
 
+func newPageServer(ps *pageServer) (PageServer, error) {
+    var err error
+
+    if ps == nil {
+        ps = &pageServer{}
+    }
+
+    ps.userPage = template.New("")
+    _, err = ps.userPage.Parse(config.Get().PageTemplate(pageTemplate))
+    if err != nil {
+        return nil, errors.Wrap(err, "Failed to parse template page")
+    }
+
+    ps.renewPage = template.New("")
+    _, err = ps.renewPage.Parse(renewTemplate)
+    if err != nil {
+        return nil, errors.Wrap(err, "Failed to parse renew server template page")
+    }
+
+    return ps, nil
+}
+
+func New() (PageServer, error) {
+    return newPageServer(nil)
+}
+
 // StartServer starts a new server in the requested port
 func StartServer(port int) error {
     var err error
@@ -176,16 +207,9 @@ func StartServer(port int) error {
         Handler: &srv,
     }
 
-    srv.userPage = template.New("")
-    _, err = srv.userPage.Parse(config.Get().PageTemplate(pageTemplate))
+    _, err = newPageServer(&srv)
     if err != nil {
-        return errors.Wrap(err, "Failed to parse template page")
-    }
-
-    srv.renewPage = template.New("")
-    _, err = srv.renewPage.Parse(renewTemplate)
-    if err != nil {
-        return errors.Wrap(err, "Failed to parse renew server template page")
+        return err
     }
 
     go func() {
